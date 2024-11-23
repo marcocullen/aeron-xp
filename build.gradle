@@ -21,6 +21,11 @@ dependencies {
 shadowJar {
     // Optional: customize the base name of the jar
     archiveBaseName.set('aeron-app')
+    manifest {
+        attributes(
+            'Main-Class': 'org.starquake.HorizonArchive'
+        )
+    }
 
     // Optional: if you need to relocate any dependencies to avoid conflicts
     // relocate 'com.google.common', 'shadow.com.google.common'
