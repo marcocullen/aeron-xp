@@ -10,21 +10,13 @@ repositories {
 }
 
 dependencies {
+    implementation 'io.aeron:aeron-client:1.40.0'
+    implementation 'io.aeron:aeron-driver:1.40.0'
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+
 }
 
 test {
     useJUnitPlatform()
-}plugins {
-    id 'java'
-}
-
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    implementation 'io.aeron:aeron-client:1.40.0'
-    implementation 'io.aeron:aeron-driver:1.40.0'
 }
