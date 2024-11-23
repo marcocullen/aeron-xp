@@ -1,9 +1,10 @@
 plugins {
     id 'java'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
 group = 'org.starquake'
-version = '1.0-SNAPSHOT'
+version = '0.0.1'
 
 repositories {
     mavenCentral()
@@ -15,6 +16,21 @@ dependencies {
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
 
+}
+
+shadowJar {
+    // Optional: customize the base name of the jar
+    archiveBaseName.set('aeron-app')
+
+    // Optional: if you need to relocate any dependencies to avoid conflicts
+    // relocate 'com.google.common', 'shadow.com.google.common'
+
+    // Ensure the manifest has the correct attributes
+    manifest {
+        attributes(
+                'Main-Class': 'org.starquake.driver.AeronDriver'  // This can be any of your main classes since we'll override in Docker
+        )
+    }
 }
 
 test {
