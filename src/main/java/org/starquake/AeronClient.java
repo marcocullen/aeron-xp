@@ -4,7 +4,7 @@ import io.aeron.Aeron;
 import io.aeron.Publication;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class AeronClient {
+public class AeronProducer {
     private static final String CHANNEL = "aeron:udp?endpoint=localhost:40456";
     private static final int STREAM_ID = 10;
     private static final int MESSAGE_LENGTH = 32;
