@@ -16,7 +16,6 @@ public class HorizonArchive {
         try (MediaDriver mediaDriver = MediaDriver.launch(driverContext)) {
             System.out.println("Embedded Media Driver started");
 
-            // Start an Aeron Archive
             Archive.Context archiveContext = new Archive.Context()
                     .aeronDirectoryName(driverContext.aeronDirectoryName())
                     .archiveDir(new File("/archive"))
@@ -24,7 +23,7 @@ public class HorizonArchive {
                     .localControlChannel("aeron:ipc")
                     .recordingEventsChannel("aeron:udp?endpoint=172.16.0.2:8020")
                     .replicationChannel("aeron:udp?endpoint=172.16.0.2:8030")
-                    .recordingEventsEnabled(true);  // Make sure we get events
+                    .recordingEventsEnabled(true);  //they should be enabled, default is false
 
             try (Archive archive = Archive.launch(archiveContext)) {
                 System.out.println("Aeron Archive started");

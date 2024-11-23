@@ -2,9 +2,8 @@ package org.starquake.recording;
 
 import io.aeron.FragmentAssembler;
 import io.aeron.Subscription;
-import io.aeron.driver.MediaDriver;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.client.RecordingDescriptorConsumer;
+import io.aeron.driver.MediaDriver;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 
@@ -86,8 +85,8 @@ public class RecordingReplayer {
 
             System.out.println("Waiting for replay...");
             FragmentAssembler fragmentAssembler = new FragmentAssembler(
-                    (buffer, offset, length1, header) -> {
-                        final String message = buffer.getStringWithoutLengthAscii(offset, length1);
+                    (buffer, offset, bufferLength, header) -> {
+                        final String message = buffer.getStringWithoutLengthAscii(offset, bufferLength);
                         System.out.println("Replayed message: " + message);
                     });
 
