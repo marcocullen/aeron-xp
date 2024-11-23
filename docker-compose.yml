@@ -1,48 +1,4 @@
 version: '4'
-services:
-  subscriber:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    command: [ "java", "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "-cp",
-               "/app/application.jar", "org.starquake.consumer.AeronConsumer" ]
-    networks:
-      aeron_net:
-        ipv4_address: 172.16.0.3
-    volumes:
-      - type: tmpfs
-        target: /dev/shm
-    healthcheck:
-      test: [ "CMD-SHELL", "ps aux | grep -v grep | grep -q 'AeronConsumer' && echo 'Consumer running' || exit 1" ]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-      start_period: 10s
-      start_interval: 5s
-
-  producer:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    command: [ "java", "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "-cp",
-               "/app/application.jar", "org.starquake.producer.AeronProducer" ]
-    networks:
-      aeron_net:
-        ipv4_address: 172.16.0.4
-    volumes:
-      - type: tmpfs
-        target: /dev/shm
-    depends_on:
-      subscriber:
-        condition: service_healthy
-        required: true
-    healthcheck:
-      test: [ "CMD-SHELL", "ps aux | grep -v grep | grep -q 'AeronProducer' && echo 'Producer running' || exit 1" ]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-      start_period: 10s
-      start_interval: 5s
 
 networks:
   aeron_net:
@@ -51,3 +7,76 @@ networks:
       driver: default
       config:
         - subnet: 172.16.0.0/24
+
+volumes:
+  archive-storage:
+
+services:
+  archive:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: [ "java", "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "-cp",
+               "/app/application.jar", "org.starquake.archive.HorizonArchive" ]
+    networks:
+      aeron_net:
+        ipv4_address: 172.16.0.2
+    volumes:
+      - type: tmpfs
+        target: /dev/shm
+      - archive-storage:/archive
+    healthcheck:
+      test: [ "CMD-SHELL", "ps aux | grep -v grep | grep -q 'HorizonArchive' && echo 'Archive running' || exit 1" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+      start_interval: 5s
+
+  recording_producer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: [ "java", "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "-cp",
+               "/app/application.jar", "org.starquake.recording.RecordingProducer" ]
+    networks:
+      aeron_net:
+        ipv4_address: 172.16.0.5
+    volumes:
+      - type: tmpfs
+        target: /dev/shm
+    depends_on:
+      archive:
+        condition: service_healthy
+        required: true
+    healthcheck:
+      test: [ "CMD-SHELL", "ps aux | grep -v grep | grep -q 'RecordingProducer' && echo 'Recording Producer running' || exit 1" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+      start_interval: 5s
+
+  recording_replayer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: [ "java", "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "-cp",
+               "/app/application.jar", "org.starquake.recording.RecordingReplayer" ]
+    networks:
+      aeron_net:
+        ipv4_address: 172.16.0.6
+    volumes:
+      - type: tmpfs
+        target: /dev/shm
+    depends_on:
+      recording_producer:
+        condition: service_healthy
+        required: true
+    healthcheck:
+      test: [ "CMD-SHELL", "ps aux | grep -v grep | grep -q 'RecordingReplayer' && echo 'Recording Replayer running' || exit 1" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+      start_interval: 5s

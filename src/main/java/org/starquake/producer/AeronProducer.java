@@ -23,7 +23,7 @@ public class AeronProducer {
 
             try (Aeron aeron = Aeron.connect(ctx);
                  Publication publication = aeron.addPublication(CHANNEL, STREAM_ID)) {
-
+                System.out.printf("Publication with stream id: %d added on channel: %s%n", STREAM_ID, CHANNEL);
                 UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
                 String message = "Hello, batman!";
                 buffer.putStringWithoutLengthAscii(0, message);
