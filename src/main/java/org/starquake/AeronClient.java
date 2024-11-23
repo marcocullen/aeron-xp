@@ -7,7 +7,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class AeronClient {
     private static final String CHANNEL = "aeron:udp?endpoint=localhost:40456";
     private static final int STREAM_ID = 10;
-    private static final int MESSAGE_LENGTH = 256;
+    private static final int MESSAGE_LENGTH = 32;
 
     public static void main(String[] args) {
         try (Aeron aeron = Aeron.connect();
