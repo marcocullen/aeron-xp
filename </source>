@@ -1,0 +1,83 @@
+plugins {
+    id 'org.springframework.boot' version '3.0.6'
+    id 'io.spring.dependency-management' version '1.1.0'
+    id 'java'
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '17'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+package org.starquake;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.starquake.metrics.MetricsSubscriber;
+
+@SpringBootApplication
+public class MetricsSubscriberRunner {
+
+    public static void main(String[] args) throws Exception {
+        ConfigurableApplicationContext context = SpringApplication.run(MetricsSubscriberRunner.class, args);
+        MetricsSubscriber metricsSubscriber = context.getBean(MetricsSubscriber.class);
+
+        // Start the subscriber
+        metricsSubscriber.start();
+
+        // Keep the application running
+        Thread.currentThread().join();
+    }
+}
+package org.starquake.metrics;
+
+import org.springframework.stereotype.Component;
+import io.aeron.Aeron;
+import io.aeron.Subscription;
+import io.aeron.logbuffer.FragmentHandler;
+import org.agrona.concurrent.SigInt;
+import org.agrona.concurrent.SleepingIdleStrategy;
+import org.agrona.concurrent.IdleStrategy;
+
+@Component
+public class MetricsSubscriber implements FragmentHandler {
+
+    private Aeron aeron;
+    private Subscription subscription;
+
+    public void start() throws Exception {
+        final IdleStrategy idleStrategy = new SleepingIdleStrategy();
+        final String channel = "aeron:udp?endpoint=localhost:20121";
+        final int streamId = 10;
+
+        aeron = Aeron.connect();
+
+        subscription = aeron.addSubscription(channel, streamId);
+
+        SigInt.register(() -> {
+            System.out.println("Shutting down...");
+            subscription.close();
+            aeron.close();
+        });
+
+        while (true) {
+            idleStrategy.idle(subscription.poll(this, 10));
+        }
+    }
+
+    @Override
+    public void onFragment(io.aeron.logbuffer.FragmentBuffer buffer, int offset, int length, io.aeron.logbuffer.Header header) {
+        final byte[] data = new byte[length];
+        buffer.getBytes(offset, data);
+        System.out.println("Received: " + new String(data));
+    }
+}
+# Add any specific configurations here if needed
