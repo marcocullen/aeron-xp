@@ -8,12 +8,10 @@ import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 
 public class RecordingReplayer {
-    // Channel we're looking for recordings on - must match producer exactly
     private static final String RECORDING_CHANNEL = "aeron:udp?endpoint=172.16.0.2:40456|control=172.16.0.5:40457";
     private static final String REPLAY_CHANNEL = "aeron:udp?endpoint=172.16.0.6:40456";
     private static final int STREAM_ID = 10;
     private static final IdleStrategy IDLE_STRATEGY = new BackoffIdleStrategy();
-
 
     // Record class to store recording details
     private static class Recording {
@@ -36,15 +34,15 @@ public class RecordingReplayer {
     private static Recording findLatestRecording(AeronArchive archive) {
         System.out.println("Searching for recordings..." + RECORDING_CHANNEL);
 
-        // Storage for all found recordings
+        // Storage for the latest recording found
         final Recording[] latestRecording = new Recording[1];
 
-        // First list all recordings to see what's available
+        // List all recordings matching the channel and stream ID
         archive.listRecordingsForUri(
-                0,    // from record id
-                Integer.MAX_VALUE,  // max number of records
-                RECORDING_CHANNEL,  // specific channel we want
-                STREAM_ID,         // specific stream we want
+                0,                      // from recording id
+                Integer.MAX_VALUE,      // max number of records
+                RECORDING_CHANNEL,      // specific channel we want
+                STREAM_ID,              // specific stream we want
                 (controlSessionId, correlationId, recordingId, startTimestamp,
                  stopTimestamp, startPosition, stopPosition, initialTermId,
                  segmentFileLength, termBufferLength, mtuLength, sessionId,
@@ -63,11 +61,19 @@ public class RecordingReplayer {
     }
 
     private static void replayRecording(AeronArchive archive, Recording recording) {
-        System.out.printf("Replaying recording: ID=%d from position %d to %d%n",
-                recording.recordingId, recording.startPosition, recording.stopPosition);
+        System.out.printf("Replaying recording: ID=%d from position %d to %s%n",
+                recording.recordingId, recording.startPosition,
+                recording.stopPosition == -1 ? "end (ongoing recording)" : recording.stopPosition);
 
         int replayStreamId = STREAM_ID + 1;
-        long length = recording.stopPosition - recording.startPosition;
+        long length;
+
+        if (recording.stopPosition == -1) {
+            // Recording is ongoing; replay indefinitely
+            length = Long.MAX_VALUE;
+        } else {
+            length = recording.stopPosition - recording.startPosition;
+        }
 
         // Start replay session
         long replaySessionId = archive.startReplay(
@@ -87,19 +93,27 @@ public class RecordingReplayer {
             FragmentAssembler fragmentAssembler = new FragmentAssembler(
                     (buffer, offset, bufferLength, header) -> {
                         final String message = buffer.getStringWithoutLengthAscii(offset, bufferLength);
-                        System.out.println("Replayed message: " + message);
+                        //System.out.println("Replayed message: " + message);
                     });
 
-            // Poll with timeout
-            long startTime = System.currentTimeMillis();
-            long timeout = 5000; // 5 seconds
-
-            while (System.currentTimeMillis() - startTime < timeout) {
+            // Poll indefinitely, logging only when necessary
+            long lastLogTime = System.currentTimeMillis();
+            while (true) {
                 final int fragmentsRead = subscription.poll(fragmentAssembler, 10);
+
+                // Only log when fragments are read
                 if (fragmentsRead > 0) {
-                    System.out.println("Read " + fragmentsRead + " fragments");
+//                    System.out.println("Read " + fragmentsRead + " fragments");
                 }
-                IDLE_STRATEGY.idle();
+
+                // Periodically log that the replayer is active
+                long currentTime = System.currentTimeMillis();
+                if (currentTime - lastLogTime >= 5000) { // every 5 seconds
+                    System.out.println("Replayer is active...");
+                    lastLogTime = currentTime;
+                }
+
+                IDLE_STRATEGY.idle(fragmentsRead);
             }
         }
     }
@@ -121,10 +135,7 @@ public class RecordingReplayer {
                 Recording latestRecording = findLatestRecording(archive);
                 if (latestRecording != null) {
                     replayRecording(archive, latestRecording);
-                    while (true) {
-                        Thread.sleep(5000);
-                        System.out.println("Replayer healthy...");
-                    }
+                    // The replayRecording method runs indefinitely
                 } else {
                     System.out.println("No recordings found");
                     System.exit(1);

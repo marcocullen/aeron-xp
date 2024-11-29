@@ -9,7 +9,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class RecordingProducer {
     // Change from endpoint to explicit publish
     private static final String RECORDING_CHANNEL =
-            "aeron:udp?endpoint=172.16.0.2:40456|control=172.16.0.5:40457";  // Send TO archive, control FROM our IP
+            "aeron:udp?endpoint=172.16.0.2:40456|control=172.16.0.5:40457|term-length=65536";  // Send TO archive, control FROM our IP
     private static final int MESSAGE_LENGTH = 32;
     private static final int STREAM_ID = 10;
 
@@ -43,36 +43,28 @@ public class RecordingProducer {
                     }
 
                     UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
-                    String message = "Hello, Recorded World!";
-                    buffer.putStringWithoutLengthAscii(0, message);
 
-                    System.out.println("Attempting to publish message...");
-                    long result;
-                    while ((result = publication.offer(buffer, 0, MESSAGE_LENGTH)) < 0L) {
-                        if (result == Publication.BACK_PRESSURED) {
-                            System.out.println("Back pressured");
-                        } else if (result == Publication.NOT_CONNECTED) {
-                            System.out.println("Not connected");
-                        } else if (result == Publication.ADMIN_ACTION) {
-                            System.out.println("Admin action");
-                        } else if (result == Publication.CLOSED) {
-                            System.out.println("Publication closed");
-                            break;
+                    int messageCount = 0;
+                    while (true) {
+                        String message = "Message " + messageCount++;
+                        buffer.putStringWithoutLengthAscii(0, message);
+
+                        long result;
+                        while ((result = publication.offer(buffer, 0, MESSAGE_LENGTH)) < 0L) {
+                            // Handle back pressure or other conditions
+                            if (result == Publication.BACK_PRESSURED) {
+                                System.out.println("Back pressured");
+                            } else if (result == Publication.NOT_CONNECTED) {
+                                System.out.println("Not connected");
+                            } else if (result == Publication.ADMIN_ACTION) {
+                                System.out.println("Admin action");
+                            } else if (result == Publication.CLOSED) {
+                                System.out.println("Publication closed");
+                                break;
+                            }
+                            Thread.yield();
                         }
-                        Thread.sleep(10);
-                    }
-
-                    if (result > 0) {
-                        System.out.println("Message successfully published: " + message);
-
-                        while (true) {
-                            System.out.println("Producer healthy and standing by...");
-                            Thread.sleep(5000);
-                        }
-
-                    } else {
-                        System.out.println("Failed to publish message");
-                        System.exit(1);
+                        Thread.sleep(2);
                     }
                 }
             }

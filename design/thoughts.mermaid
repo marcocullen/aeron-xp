@@ -1,0 +1,23 @@
+graph TD
+    A[Recording Producer] -->|Writes| B[Archive]
+    C[Recording Replayer] -->|Reads| B
+
+    subgraph "Current System State"
+        B --> D[Recording Segments]
+        D --> E[Disk Usage Growth]
+    end
+
+    subgraph "Monitoring Requirements"
+        F[Active Replays Detection]
+        F --> G[Safe Deletion Window]
+        G --> H[Segment Purging]
+    end
+
+    subgraph "Implementation Paths"
+        I[Archive Client API]
+        I --> J[listRecordingSubscriptions]
+        I --> K[listRecordings]
+
+        L[Replication State]
+        L --> M[Replay Session Count]
+    end
