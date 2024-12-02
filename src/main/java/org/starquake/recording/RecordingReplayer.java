@@ -90,6 +90,7 @@ public class RecordingReplayer {
                 .addSubscription(REPLAY_CHANNEL, replayStreamId)) {
 
             System.out.println("Waiting for replay...");
+            long start = System.currentTimeMillis();
             FragmentAssembler fragmentAssembler = new FragmentAssembler(
                     (buffer, offset, bufferLength, header) -> {
                         final String message = buffer.getStringWithoutLengthAscii(offset, bufferLength);
@@ -111,6 +112,16 @@ public class RecordingReplayer {
                 if (currentTime - lastLogTime >= 5000) { // every 5 seconds
                     System.out.println("Replayer is active...");
                     lastLogTime = currentTime;
+                    if(currentTime - start > 10_000) {
+                        System.out.println("Pausing...");
+                        while (true) {
+                            try {
+                                Thread.sleep(1000);
+                            } catch (InterruptedException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                    }
                 }
 
                 IDLE_STRATEGY.idle(fragmentsRead);

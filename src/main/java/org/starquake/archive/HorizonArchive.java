@@ -40,12 +40,17 @@ public class HorizonArchive {
 
                 System.out.println("Aeron Archive started");
 
-                final ArchiveMonitor monitor = new ArchiveMonitor(aeron, aeronArchive);
+                // Create ArchiveMonitor with its own control response channel
+                try (final ArchiveMonitor monitor = new ArchiveMonitor(
+                        driverContext.aeronDirectoryName(),
+                        archiveContext.controlChannel(),
+                        "aeron:udp?endpoint=localhost:0")) {
 
-                // Main loop
-                while (true) {
-                    monitor.doWork();
-                    Thread.sleep(100); // Avoid tight loop
+                    // Main loop
+                    while (true) {
+                        monitor.doWork();
+                        Thread.sleep(100); // Avoid tight loop
+                    }
                 }
             }
         } catch (Exception e) {

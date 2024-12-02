@@ -54,6 +54,7 @@ public class RecordingProducer {
                             // Handle back pressure or other conditions
                             if (result == Publication.BACK_PRESSURED) {
                                 System.out.println("Back pressured");
+                                System.exit(1);
                             } else if (result == Publication.NOT_CONNECTED) {
                                 System.out.println("Not connected");
                             } else if (result == Publication.ADMIN_ACTION) {

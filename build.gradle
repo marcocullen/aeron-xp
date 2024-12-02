@@ -7,13 +7,14 @@ group = 'org.starquake'
 version = '0.0.1'
 
 repositories {
+    mavenLocal()
     mavenCentral()
 }
 
 dependencies {
-    implementation 'io.aeron:aeron-client:1.46.7'
-    implementation 'io.aeron:aeron-archive:1.46.7'
-    implementation 'io.aeron:aeron-driver:1.46.7'
+    implementation 'io.aeron:aeron-client:1.47.2-EXPERIMENTAL'
+    implementation 'io.aeron:aeron-archive:1.47.2-EXPERIMENTAL'
+    implementation 'io.aeron:aeron-driver:1.47.2-EXPERIMENTAL'
     implementation 'org.codejargon.feather:feather:1.0'
     implementation 'org.yaml:snakeyaml:2.2'  // Just the YAML parser
     implementation 'io.micrometer:micrometer-core:1.11.5'
